@@ -12,6 +12,7 @@ var (
 	version = "dev"
 
 	humanFlag bool
+	jsonFlag  bool
 )
 
 var rootCmd = &cobra.Command{
@@ -58,4 +59,5 @@ func init() {
 	rootCmd.Flags().String("generate-completion", "", "Generate shell completion (bash, zsh, fish)")
 	rootCmd.Flags().MarkHidden("generate-completion")
 	rootCmd.PersistentFlags().BoolVar(&humanFlag, "human", false, "Output in human-readable format (default is JSON)")
+	rootCmd.PersistentFlags().BoolVar(&jsonFlag, "json", false, "Output in JSON format (default; explicit form of the default)")
 }

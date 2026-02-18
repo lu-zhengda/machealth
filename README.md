@@ -4,7 +4,7 @@
 [![Platform: macOS](https://img.shields.io/badge/Platform-macOS-lightgrey.svg)](https://github.com/lu-zhengda/machealth)
 [![Homebrew](https://img.shields.io/badge/Homebrew-lu--zhengda/tap-orange.svg)](https://github.com/lu-zhengda/homebrew-tap)
 
-macOS system health checker for AI agents — a single-call health assessment across 8 subsystems with JSON output.
+macOS system health checker for AI agents — a single-call health assessment across 9 subsystems with JSON output.
 
 ## Install
 
@@ -18,13 +18,17 @@ brew install machealth
 ```
 $ machealth
 {
-  "timestamp": "2026-02-16T10:30:00Z",
+  "timestamp": "2026-02-18T10:30:00Z",
   "score": { "status": "green", "value": 95, "reasons": [] },
   "cpu": { "status": "green", "load_avg_1m": 1.42, ... },
   "memory": { "status": "green", "pressure_percent": 68, ... },
   "disk": { "status": "green", "available_gb": 120.5, ... },
+  "bluetooth": { "status": "green", "available": true, "enabled": true, "connected_device_count": 2, ... }
   ...
 }
+
+$ machealth --json   # explicit JSON flag (same as default)
+{ ... }
 
 $ machealth --human
 [OK] System Health: GREEN (score: 95/100)
@@ -37,6 +41,7 @@ $ machealth --human
   [OK] Battery        78%, AC Power, charging
   [OK] Time Machine   Idle
   [OK] Network        Reachable via en0 (192.168.1.10)
+  [OK] Bluetooth      On, 2 connected: AirPods Pro (91%), MX Keys
 
 $ machealth diagnose --human
 [!!] System Health: YELLOW (score: 72/100)
@@ -62,6 +67,13 @@ $ machealth diagnose --human
 | `watch --human` | Refreshing terminal display | `machealth watch --human` |
 | `diagnose` | Health check with actionable diagnoses | `machealth diagnose --human` |
 | `--human` | Human-readable output instead of JSON | `machealth --human` |
+| `--json` | Explicit JSON output (default; useful in scripts for clarity) | `machealth --json` |
+
+### Output Format Flags
+
+`--json` and `--human` are mutually exclusive. `--json` is the default behavior and exists as an
+explicit form for scripts that want to be self-documenting. If both flags are passed, `--json` takes
+priority (JSON wins).
 
 ### Exit Codes
 
@@ -83,6 +95,51 @@ $ machealth diagnose --human
 | iCloud | 5% | Sync status |
 | Network | 5% | Reachability, active interface |
 | Time Machine | 0% | Backup state (degrades status, not score) |
+| Bluetooth | 0% | Controller state, connected devices, battery (read-only, never causes critical) |
+
+## Bluetooth Field
+
+The `bluetooth` field is included in all output modes. It is read-only and informational — it
+**never** causes a red/critical overall status, ensuring it cannot produce false criticals.
+
+```json
+"bluetooth": {
+  "status": "green",
+  "available": true,
+  "enabled": true,
+  "connected_device_count": 2,
+  "devices": [
+    { "name": "AirPods Pro", "connected": true, "battery_percent": 91 },
+    { "name": "MX Keys",     "connected": true, "battery_percent": -1 },
+    { "name": "Magic Mouse", "connected": false, "battery_percent": -1 }
+  ]
+}
+```
+
+### Bluetooth Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | `green` / `yellow` — never `red` |
+| `available` | bool | `false` if `system_profiler` returned no data (degrade gracefully) |
+| `enabled` | bool | Whether the Bluetooth controller is powered on |
+| `connected_device_count` | int | Number of currently connected devices |
+| `devices` | array | All paired/known devices (omitted if none or BT unavailable) |
+| `devices[].name` | string | Device display name |
+| `devices[].connected` | bool | Whether currently connected |
+| `devices[].battery_percent` | int | Battery level 0–100, or `-1` if not reported by the device |
+
+**Battery notes:** AirPods and other multi-component devices report separate Left/Right/Case battery
+levels. `battery_percent` contains the **highest** reported value across all components. Devices that
+do not transmit battery information (mice, keyboards without BT LE battery service) report `-1`.
+
+**Graceful degradation:** If `system_profiler SPBluetoothDataType` returns no output (e.g., the
+process lacks Bluetooth permission, or on a headless system), `available` is `false` and all other
+fields default to zero/false. No error is surfaced to the overall score.
+
+**macOS compatibility:** Parses both modern (Sonoma/Sequoia: `State: On`, `Connected:` /
+`Not Connected:` sections) and legacy (Ventura and earlier: `Bluetooth Power: On`,
+`Devices (Paired…)` section with `Connected: Yes/No` property) output formats.
 
 ## Diagnostic Workflow
 

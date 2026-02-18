@@ -17,7 +17,7 @@ var checkCmd = &cobra.Command{
 		r := health.Check()
 		exitCode = health.ExitCode(r)
 
-		if humanFlag {
+		if humanFlag && !jsonFlag {
 			printHumanReport(r)
 			return nil
 		}
@@ -86,9 +86,38 @@ func printHumanReport(r health.Report) {
 	}
 	printSubsystem("Network", r.Network.Status, netDetail)
 
+	btDetail := bluetoothDetail(r.Bluetooth)
+	printSubsystem("Bluetooth", r.Bluetooth.Status, btDetail)
+
 	if len(r.Score.Reasons) > 0 {
 		fmt.Printf("\nReasons: %s\n", strings.Join(r.Score.Reasons, ", "))
 	}
+}
+
+func bluetoothDetail(bt health.Bluetooth) string {
+	if !bt.Available {
+		return "Unavailable (no data)"
+	}
+	if !bt.Enabled {
+		return "Off"
+	}
+	detail := fmt.Sprintf("On, %d connected", bt.ConnectedDeviceCount)
+	if len(bt.Devices) > 0 {
+		var names []string
+		for _, d := range bt.Devices {
+			if d.Connected {
+				entry := d.Name
+				if d.BatteryPercent >= 0 {
+					entry += fmt.Sprintf(" (%d%%)", d.BatteryPercent)
+				}
+				names = append(names, entry)
+			}
+		}
+		if len(names) > 0 {
+			detail += ": " + strings.Join(names, ", ")
+		}
+	}
+	return detail
 }
 
 func printSubsystem(name string, status health.Status, detail string) {

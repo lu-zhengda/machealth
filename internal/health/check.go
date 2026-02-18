@@ -12,7 +12,7 @@ func Check() Report {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(8)
+	wg.Add(9)
 
 	go func() { defer wg.Done(); r.CPU = CheckCPU() }()
 	go func() { defer wg.Done(); r.Memory = CheckMemory() }()
@@ -22,6 +22,7 @@ func Check() Report {
 	go func() { defer wg.Done(); r.Battery = CheckBattery() }()
 	go func() { defer wg.Done(); r.TimeMachine = CheckTimeMachine() }()
 	go func() { defer wg.Done(); r.Network = CheckNetwork() }()
+	go func() { defer wg.Done(); r.Bluetooth = CheckBluetooth() }()
 
 	wg.Wait()
 
@@ -43,6 +44,7 @@ func Diagnose() DiagnoseReport {
 		func() *Diagnosis { return DiagnoseBattery(r.Battery) },
 		func() *Diagnosis { return DiagnoseTimeMachine(r.TimeMachine) },
 		func() *Diagnosis { return DiagnoseNetwork(r.Network) },
+		func() *Diagnosis { return DiagnoseBluetooth(r.Bluetooth) },
 	}
 
 	for _, fn := range diagnosers {
@@ -81,6 +83,12 @@ func statusValue(s Status) int {
 }
 
 func computeScore(r Report) Score {
+	// Bluetooth status is capped at yellow — never causes a red overall score.
+	btStatus := r.Bluetooth.Status
+	if btStatus == StatusRed {
+		btStatus = StatusYellow
+	}
+
 	subsystems := map[string]Status{
 		"cpu":         r.CPU.Status,
 		"memory":      r.Memory.Status,
@@ -90,6 +98,7 @@ func computeScore(r Report) Score {
 		"battery":     r.Battery.Status,
 		"timemachine": r.TimeMachine.Status,
 		"network":     r.Network.Status,
+		"bluetooth":   btStatus,
 	}
 
 	// TimeMachine shares disk weight (not a separate weight)

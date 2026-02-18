@@ -34,7 +34,7 @@ Use --human for a refreshing human-readable display.`,
 		r := health.Check()
 		exitCode = health.ExitCode(r)
 
-		if humanFlag {
+		if humanFlag && !jsonFlag {
 			fmt.Print("\033[2J\033[H")
 			printHumanReport(r)
 			fmt.Printf("\n(watching every %s, Ctrl+C to stop)\n", watchInterval)
@@ -52,7 +52,7 @@ Use --human for a refreshing human-readable display.`,
 				r = health.Check()
 				exitCode = health.ExitCode(r)
 
-				if humanFlag {
+				if humanFlag && !jsonFlag {
 					fmt.Print("\033[2J\033[H")
 					printHumanReport(r)
 					fmt.Printf("\n(watching every %s, Ctrl+C to stop)\n", watchInterval)

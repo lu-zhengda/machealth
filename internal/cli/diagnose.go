@@ -17,7 +17,7 @@ var diagnoseCmd = &cobra.Command{
 		dr := health.Diagnose()
 		exitCode = health.ExitCode(dr.Report)
 
-		if humanFlag {
+		if humanFlag && !jsonFlag {
 			printHumanDiagnose(dr)
 			return nil
 		}

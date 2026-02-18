@@ -13,16 +13,17 @@ const (
 
 // Report is the top-level health check output.
 type Report struct {
-	Timestamp  time.Time  `json:"timestamp"`
-	Score      Score      `json:"score"`
-	CPU        CPU        `json:"cpu"`
-	Memory     Memory     `json:"memory"`
-	Disk       Disk       `json:"disk"`
-	Thermal    Thermal    `json:"thermal"`
-	ICloud     ICloud     `json:"icloud"`
-	Battery    Battery    `json:"battery"`
+	Timestamp   time.Time   `json:"timestamp"`
+	Score       Score       `json:"score"`
+	CPU         CPU         `json:"cpu"`
+	Memory      Memory      `json:"memory"`
+	Disk        Disk        `json:"disk"`
+	Thermal     Thermal     `json:"thermal"`
+	ICloud      ICloud      `json:"icloud"`
+	Battery     Battery     `json:"battery"`
 	TimeMachine TimeMachine `json:"timemachine"`
-	Network    Network    `json:"network"`
+	Network     Network     `json:"network"`
+	Bluetooth   Bluetooth   `json:"bluetooth"`
 }
 
 // Score is the composite health score.
@@ -108,6 +109,23 @@ type Network struct {
 	Reachable bool   `json:"reachable"`
 	Interface string `json:"interface,omitempty"`
 	IP        string `json:"ip,omitempty"`
+}
+
+// Bluetooth contains Bluetooth controller and connected-device state.
+type Bluetooth struct {
+	Status               Status            `json:"status"`
+	Error                string            `json:"error,omitempty"`
+	Available            bool              `json:"available"`
+	Enabled              bool              `json:"enabled"`
+	ConnectedDeviceCount int               `json:"connected_device_count"`
+	Devices              []BluetoothDevice `json:"devices,omitempty"`
+}
+
+// BluetoothDevice represents a single paired/connected Bluetooth device.
+type BluetoothDevice struct {
+	Name           string `json:"name"`
+	Connected      bool   `json:"connected"`
+	BatteryPercent int    `json:"battery_percent,omitempty"` // -1 means not reported
 }
 
 // Diagnosis is a detailed explanation of a health issue.
